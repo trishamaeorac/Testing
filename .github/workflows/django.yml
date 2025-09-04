@@ -14,32 +14,46 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8, 3.9]  # Using stable versions of Python
 
     steps:
-      - uses: actions/checkout@v2  # Use stable version of checkout
+      # Step 1: Clean up any existing git cache that might be causing issues
+      - name: Clean Git Cache
+        run: |
+          rm -rf .git
+          git init
+          git remote add origin https://github.com/${{ github.repository }}.git
+
+      # Step 2: Checkout the repository
+      - uses: actions/checkout@v2  # Ensure you're using the stable version of checkout
+
+      # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2  # Use stable version for Python setup
+        uses: actions/setup-python@v2  # Stable version of setup-python
         with:
           python-version: ${{ matrix.python-version }}
-      
+
+      # Step 4: Cache pip dependencies (use actions/cache v4)
       - name: Cache pip dependencies
-        uses: actions/cache@v4  # Ensure we're using the updated cache version
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      # Step 5: Install dependencies from requirements.txt
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --no-cache-dir -r requirements.txt  # Install without using cache
+          pip install --no-cache-dir -r requirements.txt  # Ensure we install with no cache to avoid issues
 
+      # Step 6: Run database migrations (to make sure everything is up-to-date)
       - name: Run Migrations
         run: |
           python manage.py migrate  # Ensure the database is up to date before running tests
 
+      # Step 7: Run Django tests
       - name: Run Django Tests
         run: |
           python manage.py test  # Run the tests
