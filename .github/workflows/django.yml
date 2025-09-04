@@ -3,10 +3,10 @@ name: Django CI
 on:
   push:
     branches: 
-      - "main"
+      - "main"  # Trigger on push to 'main' branch
   pull_request:
     branches: 
-      - "main"
+      - "main"  # Trigger on PRs to 'main' branch
 
 jobs:
   build:
@@ -14,28 +14,28 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9]  # Using stable versions of Python
+        python-version: [3.8, 3.9]  # Using stable Python versions
 
     steps:
       # Step 1: Clean up any existing git cache that might be causing issues
-      - name: Clean Git Cache
+      - name: Clean up Git Cache
         run: |
-          rm -rf .git
-          git init
-          git remote add origin https://github.com/${{ github.repository }}.git
+          rm -rf .git  # Remove the existing .git directory
+          git init  # Reinitialize git
+          git remote add origin https://github.com/${{ github.repository }}.git  # Add the remote origin
 
-      # Step 2: Checkout the repository
-      - uses: actions/checkout@v2  # Ensure you're using the stable version of checkout
+      # Step 2: Checkout the repository with a fresh git configuration
+      - uses: actions/checkout@v2  # Use the stable version of the checkout action
 
-      # Step 3: Set up Python environment
+      # Step 3: Set up Python environment for the selected Python version
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2  # Stable version of setup-python
+        uses: actions/setup-python@v2  # Stable version for Python setup
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Step 4: Cache pip dependencies (use actions/cache v4)
+      # Step 4: Cache pip dependencies to speed up installs
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v4  # Updated to v4 to avoid deprecated version
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -45,15 +45,15 @@ jobs:
       # Step 5: Install dependencies from requirements.txt
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install --no-cache-dir -r requirements.txt  # Ensure we install with no cache to avoid issues
+          python -m pip install --upgrade pip  # Ensure pip is up-to-date
+          pip install --no-cache-dir -r requirements.txt  # Install dependencies from the requirements.txt file
 
-      # Step 6: Run database migrations (to make sure everything is up-to-date)
+      # Step 6: Run migrations to ensure the database is up-to-date
       - name: Run Migrations
         run: |
-          python manage.py migrate  # Ensure the database is up to date before running tests
+          python manage.py migrate  # Ensure the database schema is updated before running tests
 
-      # Step 7: Run Django tests
+      # Step 7: Run Django tests to ensure everything is working correctly
       - name: Run Django Tests
         run: |
           python manage.py test  # Run the tests
