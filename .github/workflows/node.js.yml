@@ -1,31 +1,60 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: React CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - "main"  # Trigger on push to the 'main' branch
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"  # Trigger on PRs to the 'main' branch
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [14, 16]  # Test with Node.js 14 and 16 (or other versions if needed)
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      # Step 1: Checkout the repository
+      - uses: actions/checkout@v2  # Use stable version of checkout action
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2  # Use stable version of setup-node
+        with:
+          node-version: ${{ matrix.node-version }}  # Use the Node.js version from matrix
+
+      # Step 3: Cache npm dependencies
+      - name: Cache npm dependencies
+        uses: actions/cache@v2  # Use v2 for caching
+        with:
+          path: ~/.npm  # Cache npm's global store
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}  # Cache key based on package-lock.json
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Step 4: Install dependencies
+      - name: Install Dependencies
+        run: |
+          npm install  # Install dependencies using npm
+
+      # Step 5: Run Tests
+      - name: Run Tests
+        run: |
+          npm test -- --coverage  # Run tests and generate coverage report
+
+      # Step 6: Build React App
+      - name: Build React App
+        run: |
+          npm run build  # Build the React app for production
+          
+      # Optional Step 7: Deploy (Add this if you want to deploy the app)
+      # Uncomment the following steps if you're deploying to AWS, Netlify, etc.
+      # - name: Deploy React App (Example for AWS S3)
+      #   run: |
+      #     aws s3 sync build/ s3://your-bucket-name  # Deploy to AWS S3
+      # - name: Deploy React App (Example for Netlify)
+      #   run: |
+      #     netlify deploy --prod --dir=build  # Deploy to Netlify
