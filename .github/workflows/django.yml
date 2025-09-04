@@ -14,24 +14,17 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9]  # Avoid Python 3.7 if not needed
+        python-version: [3.8, 3.9]
 
     steps:
-      # Clean up git configurations to avoid proxy issues
-      - name: Clean Git Configurations
-        run: |
-          git config --global --unset-all http.proxy
-          git config --global --unset-all https.proxy
-
       - uses: actions/checkout@v2  # Use stable version of checkout
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2  # Use stable version for Python setup
         with:
           python-version: ${{ matrix.python-version }}
       
-      # Cache pip dependencies with updated version of actions/cache
       - name: Cache pip dependencies
-        uses: actions/cache@v4  # Updated to v4
+        uses: actions/cache@v4  # Ensure we're using the updated cache version
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -41,8 +34,12 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --no-cache-dir -r requirements.txt  # Install without using cache
+
+      - name: Run Migrations
+        run: |
+          python manage.py migrate  # Ensure the database is up to date before running tests
 
       - name: Run Django Tests
         run: |
-          python manage.py test
+          python manage.py test  # Run the tests
